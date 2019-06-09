@@ -1,7 +1,7 @@
 ### Soccer game with deep reinforcement learning
 In this environment, the goal is to train a team of agents to play soccer.
 
-[soccer](soccer.gif)
+![soccer](soccer.gif)
 
 You can read more about this environment in the ML-Agents GitHub [here](https://github.com/Unity-Technologies/ml-agents/blob/master/docs/Learning-Environment-Examples.md#soccer-twos). To solve this harder task, you'll need to download a new Unity environment. (Note: Udacity students should not submit a project with this new environment.)
 
