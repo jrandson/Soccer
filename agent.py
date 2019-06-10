@@ -41,6 +41,9 @@ class Replay:
 class Agent:
     def __init__(self, state_size, action_size):
 
+        self.state_size = state_size
+        self.action_size = action_size
+
         self.discount = 0.99
         self.target_mix = 5e-3
 
@@ -71,10 +74,10 @@ class Agent:
 
         self.online_actor.train()
 
-        if add_noise:
-            action += self.noise.sample()
+        # if add_noise:
+        #     action += self.noise.sample()
 
-        return np.clip(action, -1, 1)
+        return action
 
     def reset(self):
         self.noise.reset()
