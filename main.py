@@ -4,16 +4,15 @@ import numpy as np
 import matplotlib.pyplot as plt
 import torch
 
-from agent import Agent
+from agent import Agent, Replay
 
 
-def run_ddpg(env, goalier_team, striker_team, max_episodes=1000, max_steps=10000):
-    save_every = 200
+def run_ddpg(env, goalier_team, striker_team, max_episodes=10000, max_steps=300):
+    save_every = 10
     scores = []
     goalier_brain_name, striker_brain_name = env.brain_names
 
     for episode in range(1, max_episodes + 1):
-        env.reset(train_mode=True)
 
         episode_score = 0
 
@@ -25,13 +24,28 @@ def run_ddpg(env, goalier_team, striker_team, max_episodes=1000, max_steps=10000
         striker_state = env_info[striker_brain_name].vector_observations
         striker_state = np.reshape(striker_state, (1, -1))
 
-        for step in range(max_steps):
+        for step_i in range(max_steps):
+            print("\t\r Step {} from {}\t ".format(step_i, max_steps), end="", flush=True)
 
-            goalier_actions = np.asarray([agent.act(goalier_state) for agent in goalier_team], dtype=np.int16)
-            striker_actions = np.asarray([agent.act(striker_state) for agent in striker_team], dtype=np.int16)
+            goalier_actions = np.asarray([agent.act(goalier_state, add_noise=False) for agent in goalier_team])
+            # print("goalier_action: ", goalier_actions)
+            striker_actions = np.asarray([agent.act(striker_state, add_noise=False) for agent in striker_team])
+            # print("striker_actions", striker_actions)
+
+            discrete_goalier_actions = np.asarray([np.argmax(_, axis=1)[0] for _ in goalier_actions])
+            discrete_striker_actions = np.asarray([np.argmax(_, axis=1)[0] for _ in striker_actions])
+
+            if np.random.rand() < 0.05:
+                discrete_goalier_actions = np.random.randint(goalier_action_size, size=num_goalier_agents)
+
+            if np.random.rand() < 0.05:
+                discrete_striker_actions = np.random.randint(striker_action_size, size=num_striker_agents)
+
+            # print("goalier:", discrete_goalier_actions)
+            # print("striker:", discrete_striker_actions)
 
             actions = dict(zip([goalier_brain_name, striker_brain_name],
-                               [goalier_actions, striker_actions]))
+                               [discrete_goalier_actions, discrete_striker_actions]))
 
             env_info = env.step(actions)
 
@@ -69,8 +83,8 @@ def run_ddpg(env, goalier_team, striker_team, max_episodes=1000, max_steps=10000
         scores.append(np.max(episode_score))
         mean_score = np.mean(scores[-100:]) if len(scores) >= 100 else np.mean(scores)
 
-        print('\rEpisode {}\tAverage Score: {:.2f}\tScore: {:.2f}'.format(
-            episode, mean_score, np.max(episode_score)), end="", flush=True)
+        print('Episode {}\tAverage Score: {:.2f}\tScore: {:.2f}'.format(
+            episode, mean_score, episode_score))
 
         if mean_score >= 100:
             print("\t Model reached the score goal in {} episodes!".format(episode))
@@ -94,8 +108,8 @@ if __name__ == "__main__":
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     print("using device: ", device)
 
-    env = UnityEnvironment(file_name="Soccer_Linux/Soccer.x86_64", no_graphics=True)
-    print(env)
+    env = UnityEnvironment(file_name="Soccer_Linux/Soccer.x86_64", no_graphics=False)
+    # print(env)
 
     # set the goalie brain
     goalier_brain_name, striker_brain_name = env.brain_names
@@ -119,15 +133,18 @@ if __name__ == "__main__":
 
     print("training the DDPG model")
 
-    goalier_team = [Agent(state_size=goalier_state_size * 2, action_size=goalier_action_size) for _ in
-                    range(num_goalier_agents)]
-    striker_team = [Agent(state_size=striker_state_size * 2, action_size=striker_action_size) for _ in
-                    range(num_striker_agents)]
+    goalier_reply = Replay(goalier_action_size, buffer_size=int(1e6), batch_size=128)
+    striker_reply = Replay(striker_action_size, buffer_size=int(1e6), batch_size=128)
+
+    goalier_team = [Agent(state_size=goalier_state_size * 2, action_size=goalier_action_size, reply=goalier_reply)
+                    for _ in range(num_goalier_agents)]
+    striker_team = [Agent(state_size=striker_state_size * 2, action_size=striker_action_size, reply=striker_reply)
+                    for _ in range(num_striker_agents)]
 
     print("Num goalier agent", len(goalier_team))
     print("Num striker agent", len(striker_team))
 
-    scores = run_ddpg(env, goalier_team, striker_team, max_episodes=5000, max_steps=1000)
+    scores = run_ddpg(env, goalier_team, striker_team)
 
     fig, ax = plt.subplots()
     ax.plot(np.arange(1, len(scores) + 1), scores)
