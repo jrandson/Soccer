@@ -27,19 +27,19 @@ def run_ddpg(env, goalier_team, striker_team, max_episodes=10000, max_steps=300)
         for step_i in range(max_steps):
             print("\t\r Step {} from {}\t ".format(step_i, max_steps), end="", flush=True)
 
-            goalier_actions = np.asarray([agent.act(goalier_state, add_noise=False) for agent in goalier_team])
+            goalier_actions = np.asarray([agent.act(goalier_state, add_noise=True) for agent in goalier_team])
             # print("goalier_action: ", goalier_actions)
-            striker_actions = np.asarray([agent.act(striker_state, add_noise=False) for agent in striker_team])
+            striker_actions = np.asarray([agent.act(striker_state, add_noise=True) for agent in striker_team])
             # print("striker_actions", striker_actions)
 
             discrete_goalier_actions = np.asarray([np.argmax(_, axis=1)[0] for _ in goalier_actions])
             discrete_striker_actions = np.asarray([np.argmax(_, axis=1)[0] for _ in striker_actions])
 
-            if np.random.rand() < 0.05:
-                discrete_goalier_actions = np.random.randint(goalier_action_size, size=num_goalier_agents)
-
-            if np.random.rand() < 0.05:
-                discrete_striker_actions = np.random.randint(striker_action_size, size=num_striker_agents)
+            # if np.random.rand() < 0.05:
+            #     discrete_goalier_actions = np.random.randint(goalier_action_size, size=num_goalier_agents)
+            #
+            # if np.random.rand() < 0.05:
+            #     discrete_striker_actions = np.random.randint(striker_action_size, size=num_striker_agents)
 
             # print("goalier:", discrete_goalier_actions)
             # print("striker:", discrete_striker_actions)
@@ -133,8 +133,8 @@ if __name__ == "__main__":
 
     print("training the DDPG model")
 
-    goalier_reply = Replay(goalier_action_size, buffer_size=int(1e6), batch_size=128)
-    striker_reply = Replay(striker_action_size, buffer_size=int(1e6), batch_size=128)
+    goalier_reply = Replay(goalier_action_size, buffer_size=int(1e6), batch_size=256)
+    striker_reply = Replay(striker_action_size, buffer_size=int(1e6), batch_size=256)
 
     goalier_team = [Agent(state_size=goalier_state_size * 2, action_size=goalier_action_size, reply=goalier_reply)
                     for _ in range(num_goalier_agents)]

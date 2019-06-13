@@ -47,13 +47,13 @@ class Agent:
         self.discount = 0.99
         self.target_mix = 5e-3
 
-        self.online_actor = Actor(state_size, action_size, fc1_units=256, fc2_units=256).to(DEVICE)
-        self.target_actor = Actor(state_size, action_size, fc1_units=256, fc2_units=256).to(DEVICE)
-        self.actor_opt = optim.Adam(self.online_actor.parameters(), lr=1e-3)
+        self.online_actor = Actor(state_size, action_size, fc1_units=512, fc2_units=256).to(DEVICE)
+        self.target_actor = Actor(state_size, action_size, fc1_units=512, fc2_units=256).to(DEVICE)
+        self.actor_opt = optim.Adam(self.online_actor.parameters(), lr=3e-3)
 
-        self.online_critic = Critic(state_size, action_size, fc1_units=256, fc2_units=256).to(DEVICE)
-        self.target_critic = Critic(state_size, action_size, fc1_units=256, fc2_units=256).to(DEVICE)
-        self.critic_opt = optim.Adam(self.online_critic.parameters(), lr=1e-3)
+        self.online_critic = Critic(state_size, action_size, fc1_units=512, fc2_units=256).to(DEVICE)
+        self.target_critic = Critic(state_size, action_size, fc1_units=512, fc2_units=256).to(DEVICE)
+        self.critic_opt = optim.Adam(self.online_critic.parameters(), lr=3e-3)
 
         self.noise = OrnsteinUhlenbeck(action_size, mu=0., theta=0.09, sigma=0.01)
         self.replay = reply #Replay(action_size, buffer_size=int(1e6), batch_size=128)
